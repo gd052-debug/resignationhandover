@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>員工離職交接清單</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .section-title {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0.5rem;
+            height: 100%;
+            background-color: #4a5568;
+            border-radius: 9999px;
+        }
+        .add-button {
+            transition: transform 0.2s ease-in-out;
+        }
+        .add-button:hover {
+            transform: scale(1.1);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 1.5rem;
+            height: 1.5rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Style for the generated report */
+        .report-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .report-content p, .report-content li {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        @media print {
+            body { background-color: #fff; }
+            .no-print { display: none; }
+            .report-section { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+    <div id="formContainer" class="container mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-10 no-print">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-2">GUNGDAI 員工離職交接清單</h1>
+            <p class="text-gray-500 text-sm sm:text-base">請填寫以下資訊，確保工作順利交接。</p>
+        </div>
+
+        <!-- 基本資訊 -->
+        <div class="space-y-4 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label for="employeeName" class="font-medium text-gray-700 mb-1">離職人員姓名</label>
+                    <input type="text" id="employeeName" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex flex-col">
+                    <label for="position" class="font-medium text-gray-700 mb-1">職位</label>
+                    <input type="text" id="position" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label for="lastDay" class="font-medium text-gray-700 mb-1">預計離職日</label>
+                    <input type="date" id="lastDay" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex flex-col">
+                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象</label>
+                    <input type="text" id="handoverPerson" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-300 mb-8">
+
+        <!-- 交接事項 -->
+        <div id="checklist" class="space-y-8">
+            <!-- 主要工作內容 -->
+            <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">工作內容</h2>
+                    <button onclick="addWorkItem()" class="add-button text-white w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-2xl leading-none">
+                        +
+                    </button>
+                </div>
+                <div id="workItemsContainer" class="space-y-6">
+                    <!-- 動態新增的工作項目會放在這裡 -->
+                </div>
+            </div>
+
+            <!-- 文件與檔案管理 -->
+            <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">其他文件與檔案管理</h2>
+                    <button onclick="addFileItem()" class="add-button text-white w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-2xl leading-none">
+                        +
+                    </button>
+                </div>
+                <div id="fileItemsContainer" class="space-y-6">
+                    <!-- 動態新增的檔案項目會放在這裡 -->
+                </div>
+            </div>
+
+            <!-- 補充說明 -->
+            <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h2>
+                </div>
+                <div class="flex flex-col">
+                    <textarea id="notes" rows="8" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請提供工作上的經驗、小技巧或未完成事項的詳細說明。"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button onclick="generateReportAndSave()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                生成交接報表並儲存
+            </button>
+        </div>
+
+        <!-- 儲存成功訊息 -->
+        <div id="successMessage" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white p-4 rounded-lg shadow-xl transition-opacity duration-300 ease-in-out">
+            交接清單已成功儲存！
+        </div>
+    </div>
+    
+    <!-- 交接報表區塊 -->
+    <div id="reportContainer" class="hidden w-full max-w-4xl mx-auto p-8 mt-8 bg-white rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-extrabold text-gray-800">交接清單報表</h2>
+            <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow hover:bg-blue-700 transition-colors duration-200 ease-in-out">
+                列印報表
+            </button>
+        </div>
+        <div id="reportContent" class="report-content">
+            <!-- 報表內容將動態生成在此 -->
+        </div>
+    </div>
+
+    <script>
+        function addWorkItem() {
+            const container = document.getElementById('workItemsContainer');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200';
+            itemDiv.innerHTML = `
+                <div class="flex justify-end mb-2">
+                    <button onclick="this.closest('.bg-white').remove()" class="text-gray-400 hover:text-red-500 transition-colors duration-200 text-xl leading-none">&times;</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col sm:col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">工作類型</label>
+                        <select class="work-type rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="國外業務">國外業務</option>
+                            <option value="momo 電商">momo 電商</option>
+                            <option value="執秘相關">執秘相關</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">工作內容</label>
+                        <textarea rows="2" class="work-content rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請簡述工作內容"></textarea>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-medium text-gray-700 mb-1">聯絡窗口</label>
+                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名與職稱">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-medium text-gray-700 mb-1">檔案位置</label>
+                        <input type="text" class="file-location rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：雲端硬碟路徑">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-medium text-gray-700 mb-1">帳號</label>
+                        <input type="text" class="account-name rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-medium text-gray-700 mb-1">密碼</label>
+                        <input type="text" class="password-field rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex flex-col col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">備註</label>
+                        <textarea rows="2" class="notes-field rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="需特別注意的事項"></textarea>
+                    </div>
+                </div>
+            `;
+            container.appendChild(itemDiv);
+        }
+
+        function addFileItem() {
+            const container = document.getElementById('fileItemsContainer');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200';
+            itemDiv.innerHTML = `
+                <div class="flex justify-end mb-2">
+                    <button onclick="this.closest('.bg-white').remove()" class="text-gray-400 hover:text-red-500 transition-colors duration-200 text-xl leading-none">&times;</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col sm:col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">檔案類型</label>
+                        <input type="text" class="file-type rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如 : 圖檔、工作用報表、報價單">
+                    </div>
+                    <div class="flex flex-col sm:col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">檔案位置</label>
+                        <input type="text" class="file-location-new rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：雲端硬碟路徑">
+                    </div>
+                    <div class="flex flex-col sm:col-span-2">
+                        <label class="font-medium text-gray-700 mb-1">說明</label>
+                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請簡述檔案內容或用途"></textarea>
+                    </div>
+                </div>
+            `;
+            container.appendChild(itemDiv);
+        }
+
+        function generateReportAndSave() {
+            // Hide the input form
+            document.getElementById('formContainer').classList.add('hidden');
+
+            const workItems = [];
+            document.querySelectorAll('#workItemsContainer > div').forEach(itemDiv => {
+                const item = {
+                    workType: itemDiv.querySelector('.work-type').value,
+                    workContent: itemDiv.querySelector('.work-content').value,
+                    contactPerson: itemDiv.querySelector('.contact-person').value,
+                    fileLocation: itemDiv.querySelector('.file-location').value,
+                    account: itemDiv.querySelector('.account-name').value,
+                    password: itemDiv.querySelector('.password-field').value,
+                    notes: itemDiv.querySelector('.notes-field').value
+                };
+                workItems.push(item);
+            });
+
+            const fileItems = [];
+            document.querySelectorAll('#fileItemsContainer > div').forEach(itemDiv => {
+                const item = {
+                    fileType: itemDiv.querySelector('.file-type').value,
+                    fileLocation: itemDiv.querySelector('.file-location-new').value,
+                    description: itemDiv.querySelector('.file-description').value
+                };
+                fileItems.push(item);
+            });
+
+            const checklistData = {
+                basicInfo: {
+                    employeeName: document.getElementById('employeeName').value,
+                    position: document.getElementById('position').value,
+                    lastDay: document.getElementById('lastDay').value,
+                    handoverPerson: document.getElementById('handoverPerson').value
+                },
+                workItems: workItems,
+                fileManagement: {
+                    fileItems: fileItems,
+                },
+                notes: document.getElementById('notes').value
+            };
+            
+            console.log('交接清單內容：', checklistData); // In a real app, this would be a database call
+
+            // Show the report section
+            const reportContainer = document.getElementById('reportContainer');
+            reportContainer.classList.remove('hidden');
+
+            // Generate report HTML
+            let reportHTML = `
+                <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-800">基本資訊</h3>
+                    <p><strong>離職人員：</strong> ${checklistData.basicInfo.employeeName || '未填寫'}</p>
+                    <p><strong>職位：</strong> ${checklistData.basicInfo.position || '未填寫'}</p>
+                    <p><strong>預計離職日：</strong> ${checklistData.basicInfo.lastDay || '未填寫'}</p>
+                    <p><strong>交接對象：</strong> ${checklistData.basicInfo.handoverPerson || '未填寫'}</p>
+                </div>
+            `;
+
+            if (checklistData.workItems.length > 0) {
+                reportHTML += `
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-800">工作內容</h3>
+                        <ul class="list-disc pl-5 space-y-4">
+                `;
+                checklistData.workItems.forEach(item => {
+                    reportHTML += `
+                        <li class="p-2 border-b border-gray-200 last:border-b-0">
+                            <p><strong>工作類型：</strong> ${item.workType || '未填寫'}</p>
+                            <p><strong>工作內容：</strong> ${item.workContent || '未填寫'}</p>
+                            <p><strong>聯絡窗口：</strong> ${item.contactPerson || '未填寫'}</p>
+                            <p><strong>檔案位置：</strong> ${item.fileLocation || '未填寫'}</p>
+                            <p><strong>帳號：</strong> ${item.account || '未填寫'}</p>
+                            <p><strong>密碼：</strong> ${item.password || '未填寫'}</p>
+                            <p><strong>備註：</strong> ${item.notes || '未填寫'}</p>
+                        </li>
+                    `;
+                });
+                reportHTML += `</ul></div>`;
+            }
+
+            if (checklistData.fileManagement.fileItems.length > 0) {
+                reportHTML += `
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-800">其他文件與檔案管理</h3>
+                        <ul class="list-disc pl-5 space-y-4">
+                `;
+                checklistData.fileManagement.fileItems.forEach(item => {
+                    reportHTML += `
+                        <li class="p-2 border-b border-gray-200 last:border-b-0">
+                            <p><strong>檔案類型：</strong> ${item.fileType || '未填寫'}</p>
+                            <p><strong>檔案位置：</strong> ${item.fileLocation || '未填寫'}</p>
+                            <p><strong>說明：</strong> ${item.description || '未填寫'}</p>
+                        </li>
+                    `;
+                });
+                reportHTML += `</ul></div>`;
+            }
+
+            if (checklistData.notes) {
+                reportHTML += `
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h3>
+                        <p class="whitespace-pre-wrap">${checklistData.notes}</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('reportContent').innerHTML = reportHTML;
+            document.getElementById('reportContainer').scrollIntoView({ behavior: 'smooth' });
+
+            // 顯示儲存成功的訊息
+            const message = document.getElementById('successMessage');
+            message.classList.remove('hidden');
+            message.classList.remove('opacity-0');
+            message.classList.add('opacity-100');
+
+            setTimeout(() => {
+                message.classList.remove('opacity-100');
+                message.classList.add('opacity-0');
+                setTimeout(() => {
+                    message.classList.add('hidden');
+                }, 300);
+            }, 2000);
+        }
+        
+        // 頁面載入時先新增一個工作項目和一個檔案項目
+        window.onload = function() {
+            addWorkItem();
+            addFileItem();
+        };
+    </script>
+</body>
+</html>
