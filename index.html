@@ -101,7 +101,7 @@
 
         <!-- 交接事項 -->
         <div id="checklist" class="space-y-8">
-            <!-- 主要工作內容 -->
+            <!-- 工作內容 -->
             <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">工作內容</h2>
@@ -114,7 +114,7 @@
                 </div>
             </div>
 
-            <!-- 文件與檔案管理 -->
+            <!-- 其他文件與檔案管理 -->
             <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">其他文件與檔案管理</h2>
@@ -127,26 +127,22 @@
                 </div>
             </div>
 
-            <!-- 補充說明 -->
+            <!-- 其他補充說明 -->
             <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h2>
                 </div>
                 <div class="flex flex-col">
-                    <textarea id="notes" rows="8" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請提供工作上的經驗、小技巧或未完成事項的詳細說明。"></textarea>
+                    <textarea id="notes" rows="8" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="其他補充說明"></textarea>
                 </div>
             </div>
         </div>
 
         <div class="mt-8 text-center">
-            <button onclick="generateReportAndSave()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
-                生成交接報表並儲存
+            <button id="generateButton" onclick="generateReport()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center mx-auto">
+                <span id="buttonText">生成交接報表</span>
+                <div id="buttonSpinner" class="hidden loading-spinner ml-2"></div>
             </button>
-        </div>
-
-        <!-- 儲存成功訊息 -->
-        <div id="successMessage" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white p-4 rounded-lg shadow-xl transition-opacity duration-300 ease-in-out">
-            交接清單已成功儲存！
         </div>
     </div>
     
@@ -154,9 +150,14 @@
     <div id="reportContainer" class="hidden w-full max-w-4xl mx-auto p-8 mt-8 bg-white rounded-xl shadow-lg">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-3xl font-extrabold text-gray-800">交接清單報表</h2>
-            <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow hover:bg-blue-700 transition-colors duration-200 ease-in-out">
-                列印報表
-            </button>
+            <div class="flex space-x-4">
+                <button onclick="goBackToForm()" class="bg-gray-400 text-white font-bold py-2 px-6 rounded-full shadow hover:bg-gray-500 transition-colors duration-200 ease-in-out">
+                    回到表單
+                </button>
+                <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow hover:bg-blue-700 transition-colors duration-200 ease-in-out">
+                    列印報表
+                </button>
+            </div>
         </div>
         <div id="reportContent" class="report-content">
             <!-- 報表內容將動態生成在此 -->
@@ -188,14 +189,14 @@
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">聯絡窗口</label>
-                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名與職稱">
+                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名">
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">檔案位置</label>
                         <input type="text" class="file-location rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：雲端硬碟路徑">
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-medium text-gray-700 mb-1">帳號</label>
+                        <label class="font-medium text-gray-700 mb-1">帳號或email</label>
                         <input type="text" class="account-name rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="flex flex-col">
@@ -230,14 +231,14 @@
                     </div>
                     <div class="flex flex-col sm:col-span-2">
                         <label class="font-medium text-gray-700 mb-1">說明</label>
-                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請簡述檔案內容或用途"></textarea>
+                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請說明檔案內容或用途"></textarea>
                     </div>
                 </div>
             `;
             container.appendChild(itemDiv);
         }
 
-        function generateReportAndSave() {
+        function generateReport() {
             // Hide the input form
             document.getElementById('formContainer').classList.add('hidden');
 
@@ -276,16 +277,12 @@
                 fileManagement: {
                     fileItems: fileItems,
                 },
-                notes: document.getElementById('notes').value
+                notes: document.getElementById('notes').value,
             };
             
-            console.log('交接清單內容：', checklistData); // In a real app, this would be a database call
-
-            // Show the report section
             const reportContainer = document.getElementById('reportContainer');
             reportContainer.classList.remove('hidden');
 
-            // Generate report HTML
             let reportHTML = `
                 <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                     <h3 class="text-xl sm:text-2xl font-bold text-gray-800">基本資訊</h3>
@@ -347,20 +344,12 @@
 
             document.getElementById('reportContent').innerHTML = reportHTML;
             document.getElementById('reportContainer').scrollIntoView({ behavior: 'smooth' });
+        }
 
-            // 顯示儲存成功的訊息
-            const message = document.getElementById('successMessage');
-            message.classList.remove('hidden');
-            message.classList.remove('opacity-0');
-            message.classList.add('opacity-100');
-
-            setTimeout(() => {
-                message.classList.remove('opacity-100');
-                message.classList.add('opacity-0');
-                setTimeout(() => {
-                    message.classList.add('hidden');
-                }, 300);
-            }, 2000);
+        function goBackToForm() {
+            document.getElementById('reportContainer').classList.add('hidden');
+            document.getElementById('formContainer').classList.remove('hidden');
+            document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth' });
         }
         
         // 頁面載入時先新增一個工作項目和一個檔案項目
