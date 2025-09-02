@@ -91,7 +91,7 @@
                     <input type="date" id="lastDay" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="flex flex-col">
-                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象姓名</label>
+                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象</label>
                     <input type="text" id="handoverPerson" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -139,9 +139,8 @@
         </div>
 
         <div class="mt-8 text-center">
-            <button id="generateButton" onclick="generateReport()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center mx-auto">
+            <button id="generateButton" onclick="generateAndSaveReport()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center mx-auto">
                 <span id="buttonText">生成交接報表</span>
-                <div id="buttonSpinner" class="hidden loading-spinner ml-2"></div>
             </button>
         </div>
     </div>
@@ -162,10 +161,55 @@
         <div id="reportContent" class="report-content">
             <!-- 報表內容將動態生成在此 -->
         </div>
+        <div class="mt-8 text-center">
+            <button onclick="loadSavedReports()" class="bg-gray-400 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-500 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-400 focus:ring-opacity-50 flex items-center justify-center mx-auto">
+                查看歷史資料
+            </button>
+        </div>
     </div>
 
-    <script>
-        function addWorkItem() {
+    <!-- 已儲存的報表列表區塊 -->
+    <div id="savedReportsContainer" class="hidden w-full max-w-4xl mx-auto p-8 mt-8 bg-white rounded-xl shadow-lg">
+        <h2 class="text-3xl font-extrabold text-gray-800 mb-6">已儲存的交接報表</h2>
+        <div id="savedReportsList" class="space-y-4">
+            <!-- 已儲存的報表列表將動態生成在此 -->
+        </div>
+        <div class="mt-8 text-center">
+            <button onclick="goBackToForm()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center mx-auto">
+                回到表單
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase 專案配置，由 Canvas 自動提供
+        const firebaseConfig = {
+          apiKey: "AIzaSyDZ2Q32faHBF13KWEhKSbT43xDTjPwtGpg",
+          authDomain: "handover-29d2f.firebaseapp.com",
+          projectId: "handover-29d2f",
+          storageBucket: "handover-29d2f.firebasestorage.app",
+          messagingSenderId: "397582757821",
+          appId: "1:397582757821:web:e44c48be593581b6fc6cd4"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const reportCollectionPath = `/artifacts/${appId}/public/data/handover_reports`;
+        const handoverReportsCol = collection(db, reportCollectionPath);
+
+        // 在頁面載入時執行，會將表單預設為第一個項目
+        window.onload = function() {
+            addWorkItem();
+            addFileItem();
+        };
+
+        // 新增工作項目
+        window.addWorkItem = function() {
             const container = document.getElementById('workItemsContainer');
             const itemDiv = document.createElement('div');
             itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200 work-item';
@@ -180,7 +224,6 @@
                             <option value="國外業務">國外業務</option>
                             <option value="momo 電商">momo 電商</option>
                             <option value="執秘相關">執秘相關</option>
-                            <option value="其他">其他</option>
                         </select>
                     </div>
                     <div class="flex flex-col col-span-2">
@@ -196,7 +239,7 @@
                         <input type="text" class="file-location rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：雲端硬碟路徑">
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-medium text-gray-700 mb-1">帳號</label>
+                        <label class="font-medium text-gray-700 mb-1">帳號 or email</label>
                         <input type="text" class="account-name rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="flex flex-col">
@@ -213,7 +256,8 @@
             itemDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function addFileItem() {
+        // 新增檔案項目
+        window.addFileItem = function() {
             const container = document.getElementById('fileItemsContainer');
             const itemDiv = document.createElement('div');
             itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200';
@@ -239,10 +283,8 @@
             container.insertBefore(itemDiv, container.firstChild);
         }
 
-        function generateReport() {
-            // Hide the input form
-            document.getElementById('formContainer').classList.add('hidden');
-
+        // 生成報表並儲存到 Firebase
+        window.generateAndSaveReport = async function() {
             const workItems = [];
             document.querySelectorAll('#workItemsContainer > div').forEach(itemDiv => {
                 const item = {
@@ -279,28 +321,44 @@
                     fileItems: fileItems,
                 },
                 notes: document.getElementById('notes').value,
+                createdAt: Date.now()
             };
-            
-            const reportContainer = document.getElementById('reportContainer');
-            reportContainer.classList.remove('hidden');
+
+            try {
+                // 將資料儲存到 Firestore
+                const docRef = await addDoc(handoverReportsCol, checklistData);
+                console.log("Document written with ID: ", docRef.id);
+                // 成功後顯示報表
+                displayReport(checklistData);
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("儲存報表時發生錯誤，請檢查 Firebase 設定。");
+            }
+        }
+
+        // 顯示單一報表內容
+        function displayReport(data) {
+            document.getElementById('formContainer').classList.add('hidden');
+            document.getElementById('savedReportsContainer').classList.add('hidden');
+            document.getElementById('reportContainer').classList.remove('hidden');
 
             let reportHTML = `
                 <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                     <h3 class="text-xl sm:text-2xl font-bold text-gray-800">基本資訊</h3>
-                    <p><strong>離職人員：</strong> ${checklistData.basicInfo.employeeName || '未填寫'}</p>
-                    <p><strong>職位：</strong> ${checklistData.basicInfo.position || '未填寫'}</p>
-                    <p><strong>預計離職日：</strong> ${checklistData.basicInfo.lastDay || '未填寫'}</p>
-                    <p><strong>交接對象：</strong> ${checklistData.basicInfo.handoverPerson || '未填寫'}</p>
+                    <p><strong>離職人員：</strong> ${data.basicInfo.employeeName || '未填寫'}</p>
+                    <p><strong>職位：</strong> ${data.basicInfo.position || '未填寫'}</p>
+                    <p><strong>預計離職日：</strong> ${data.basicInfo.lastDay || '未填寫'}</p>
+                    <p><strong>交接對象：</strong> ${data.basicInfo.handoverPerson || '未填寫'}</p>
                 </div>
             `;
 
-            if (checklistData.workItems.length > 0) {
+            if (data.workItems.length > 0) {
                 reportHTML += `
                     <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                         <h3 class="text-xl sm:text-2xl font-bold text-gray-800">工作內容</h3>
                         <ul class="list-disc pl-5 space-y-4">
                 `;
-                checklistData.workItems.forEach(item => {
+                data.workItems.forEach(item => {
                     reportHTML += `
                         <li class="p-2 border-b border-gray-200 last:border-b-0">
                             <p><strong>工作類型：</strong> ${item.workType || '未填寫'}</p>
@@ -316,13 +374,13 @@
                 reportHTML += `</ul></div>`;
             }
 
-            if (checklistData.fileManagement.fileItems.length > 0) {
+            if (data.fileManagement.fileItems.length > 0) {
                 reportHTML += `
                     <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                         <h3 class="text-xl sm:text-2xl font-bold text-gray-800">其他文件與檔案管理</h3>
                         <ul class="list-disc pl-5 space-y-4">
                 `;
-                checklistData.fileManagement.fileItems.forEach(item => {
+                data.fileManagement.fileItems.forEach(item => {
                     reportHTML += `
                         <li class="p-2 border-b border-gray-200 last:border-b-0">
                             <p><strong>檔案類型：</strong> ${item.fileType || '未填寫'}</p>
@@ -334,11 +392,11 @@
                 reportHTML += `</ul></div>`;
             }
 
-            if (checklistData.notes) {
+            if (data.notes) {
                 reportHTML += `
                     <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                         <h3 class="text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h3>
-                        <p class="whitespace-pre-wrap">${checklistData.notes}</p>
+                        <p class="whitespace-pre-wrap">${data.notes}</p>
                     </div>
                 `;
             }
@@ -347,18 +405,106 @@
             document.getElementById('reportContainer').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function goBackToForm() {
+        // 顯示所有已儲存的報表列表
+        window.loadSavedReports = async function() {
+            document.getElementById('formContainer').classList.add('hidden');
             document.getElementById('reportContainer').classList.add('hidden');
+            document.getElementById('savedReportsContainer').classList.remove('hidden');
+            
+            const listContainer = document.getElementById('savedReportsList');
+            listContainer.innerHTML = '';
+            
+            try {
+                const querySnapshot = await getDocs(handoverReportsCol);
+                const savedReports = [];
+                querySnapshot.forEach((doc) => {
+                    savedReports.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (savedReports.length === 0) {
+                    listContainer.innerHTML = '<p class="text-gray-500 text-center">目前沒有已儲存的交接報表。</p>';
+                } else {
+                    savedReports.sort((a, b) => b.createdAt - a.createdAt); // 最新提交的排在前面
+
+                    savedReports.forEach(report => {
+                        const reportItem = document.createElement('div');
+                        reportItem.className = 'bg-white rounded-lg p-4 shadow-sm flex justify-between items-center';
+                        const reportDate = new Date(report.createdAt).toLocaleString();
+                        reportItem.innerHTML = `
+                            <div>
+                                <p class="font-bold text-gray-800">${report.basicInfo.employeeName || '未填寫姓名'} - ${reportDate}</p>
+                                <p class="text-sm text-gray-500">${report.basicInfo.position || '未填寫職位'}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="viewReport('${report.id}')" class="bg-blue-200 text-blue-800 font-bold py-1 px-3 rounded-full hover:bg-blue-300">檢視</button>
+                                <button onclick="deleteReport('${report.id}')" class="bg-red-200 text-red-800 font-bold py-1 px-3 rounded-full hover:bg-red-300">刪除</button>
+                            </div>
+                        `;
+                        listContainer.appendChild(reportItem);
+                    });
+                }
+            } catch (e) {
+                console.error("Error loading documents: ", e);
+                alert("載入歷史報表時發生錯誤，請檢查網路連線。");
+            }
+        
+            document.getElementById('savedReportsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 檢視特定報表
+        window.viewReport = async function(docId) {
+            try {
+                const docRef = doc(db, reportCollectionPath, docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const reportData = docSnap.data();
+                    displayReport(reportData);
+                } else {
+                    alert("找不到該份報表。");
+                }
+            } catch (e) {
+                console.error("Error viewing document: ", e);
+                alert("檢視報表時發生錯誤。");
+            }
+        }
+
+        // 刪除特定報表
+        window.deleteReport = async function(docId) {
+            const confirmed = window.confirm('確定要刪除這份交接報表嗎？此操作無法復原。');
+            if (confirmed) {
+                try {
+                    await deleteDoc(doc(db, reportCollectionPath, docId));
+                    await loadSavedReports(); // 重新載入列表
+                    alert("報表已成功刪除。");
+                } catch (e) {
+                    console.error("Error removing document: ", e);
+                    alert("刪除報表時發生錯誤。");
+                }
+            }
+        }
+
+        // 回到表單
+        window.goBackToForm = function() {
+            document.getElementById('reportContainer').classList.add('hidden');
+            document.getElementById('savedReportsContainer').classList.add('hidden');
             document.getElementById('formContainer').classList.remove('hidden');
             document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth' });
+            clearForm(); // 清空表單
         }
-        
-        // 頁面載入時先新增一個工作項目和一個檔案項目
-        window.onload = function() {
+
+        function clearForm() {
+            document.getElementById('employeeName').value = '';
+            document.getElementById('position').value = '';
+            document.getElementById('lastDay').value = '';
+            document.getElementById('handoverPerson').value = '';
+            document.getElementById('notes').value = '';
+            
+            document.getElementById('workItemsContainer').innerHTML = '';
+            document.getElementById('fileItemsContainer').innerHTML = '';
+            
             addWorkItem();
             addFileItem();
-        };
+        }
     </script>
 </body>
 </html>
-
