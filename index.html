@@ -91,7 +91,7 @@
                     <input type="date" id="lastDay" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="flex flex-col">
-                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象</label>
+                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象姓名</label>
                     <input type="text" id="handoverPerson" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -168,7 +168,7 @@
         function addWorkItem() {
             const container = document.getElementById('workItemsContainer');
             const itemDiv = document.createElement('div');
-            itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200';
+            itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200 work-item';
             itemDiv.innerHTML = `
                 <div class="flex justify-end mb-2">
                     <button onclick="this.closest('.bg-white').remove()" class="text-gray-400 hover:text-red-500 transition-colors duration-200 text-xl leading-none">&times;</button>
@@ -189,14 +189,14 @@
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">聯絡窗口</label>
-                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名">
+                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名與職稱">
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">檔案位置</label>
                         <input type="text" class="file-location rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：雲端硬碟路徑">
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-medium text-gray-700 mb-1">帳號或email</label>
+                        <label class="font-medium text-gray-700 mb-1">帳號</label>
                         <input type="text" class="account-name rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="flex flex-col">
@@ -209,7 +209,8 @@
                     </div>
                 </div>
             `;
-            container.appendChild(itemDiv);
+            container.insertBefore(itemDiv, container.firstChild);
+            itemDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
         function addFileItem() {
@@ -231,11 +232,11 @@
                     </div>
                     <div class="flex flex-col sm:col-span-2">
                         <label class="font-medium text-gray-700 mb-1">說明</label>
-                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請說明檔案內容或用途"></textarea>
+                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請簡述檔案內容或用途"></textarea>
                     </div>
                 </div>
             `;
-            container.appendChild(itemDiv);
+            container.insertBefore(itemDiv, container.firstChild);
         }
 
         function generateReport() {
