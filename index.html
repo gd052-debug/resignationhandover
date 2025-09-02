@@ -91,7 +91,7 @@
                     <input type="date" id="lastDay" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="flex flex-col">
-                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象</label>
+                    <label for="handoverPerson" class="font-medium text-gray-700 mb-1">交接對象姓名</label>
                     <input type="text" id="handoverPerson" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -131,9 +131,12 @@
             <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="section-title text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h2>
+                    <button onclick="addNoteItem()" class="add-button text-white w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-2xl leading-none">
+                        +
+                    </button>
                 </div>
-                <div class="flex flex-col">
-                    <textarea id="notes" rows="8" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="其他補充說明"></textarea>
+                <div id="notesContainer" class="space-y-6">
+                    <!-- 動態新增的補充說明會放在這裡 -->
                 </div>
             </div>
         </div>
@@ -206,6 +209,7 @@
         window.onload = function() {
             addWorkItem();
             addFileItem();
+            addNoteItem(); // 新增預設的第一個補充說明項目
         };
 
         // 新增工作項目
@@ -224,15 +228,16 @@
                             <option value="國外業務">國外業務</option>
                             <option value="momo 電商">momo 電商</option>
                             <option value="執秘相關">執秘相關</option>
+                            <option value="其他">其他</option>
                         </select>
                     </div>
                     <div class="flex flex-col col-span-2">
                         <label class="font-medium text-gray-700 mb-1">工作內容</label>
-                        <textarea rows="2" class="work-content rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請說明工作內容"></textarea>
+                        <textarea rows="2" class="work-content rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="說明工作內容"></textarea>
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">聯絡窗口</label>
-                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名與職稱">
+                        <input type="text" class="contact-person rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="姓名">
                     </div>
                     <div class="flex flex-col">
                         <label class="font-medium text-gray-700 mb-1">檔案位置</label>
@@ -276,8 +281,24 @@
                     </div>
                     <div class="flex flex-col sm:col-span-2">
                         <label class="font-medium text-gray-700 mb-1">說明</label>
-                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請說明檔案內容或用途"></textarea>
+                        <textarea rows="2" class="file-description rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="說明檔案內容或用途"></textarea>
                     </div>
+                </div>
+            `;
+            container.insertBefore(itemDiv, container.firstChild);
+        }
+        
+        // 新增補充說明項目
+        window.addNoteItem = function() {
+            const container = document.getElementById('notesContainer');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-white p-4 rounded-lg shadow-inner border border-gray-200';
+            itemDiv.innerHTML = `
+                <div class="flex justify-end mb-2">
+                    <button onclick="this.closest('.bg-white').remove()" class="text-gray-400 hover:text-red-500 transition-colors duration-200 text-xl leading-none">&times;</button>
+                </div>
+                <div class="flex flex-col col-span-2">
+                    <textarea rows="2" class="notes-item rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="其他交接事項"></textarea>
                 </div>
             `;
             container.insertBefore(itemDiv, container.firstChild);
@@ -308,6 +329,14 @@
                 };
                 fileItems.push(item);
             });
+            
+            const notesItems = [];
+            document.querySelectorAll('#notesContainer > div').forEach(itemDiv => {
+                const item = {
+                    note: itemDiv.querySelector('.notes-item').value
+                };
+                notesItems.push(item);
+            });
 
             const checklistData = {
                 basicInfo: {
@@ -320,7 +349,7 @@
                 fileManagement: {
                     fileItems: fileItems,
                 },
-                notes: document.getElementById('notes').value,
+                notes: notesItems,
                 createdAt: Date.now()
             };
 
@@ -392,13 +421,18 @@
                 reportHTML += `</ul></div>`;
             }
 
-            if (data.notes) {
+            if (data.notes && data.notes.length > 0) {
                 reportHTML += `
                     <div class="bg-gray-50 rounded-lg p-6 mb-6 report-section">
                         <h3 class="text-xl sm:text-2xl font-bold text-gray-800">其他補充說明</h3>
-                        <p class="whitespace-pre-wrap">${data.notes}</p>
-                    </div>
+                        <ul class="list-disc pl-5 space-y-2">
                 `;
+                data.notes.forEach(item => {
+                    reportHTML += `
+                        <li><p class="whitespace-pre-wrap">${item.note}</p></li>
+                    `;
+                });
+                reportHTML += `</ul></div>`;
             }
 
             document.getElementById('reportContent').innerHTML = reportHTML;
@@ -497,14 +531,18 @@
             document.getElementById('position').value = '';
             document.getElementById('lastDay').value = '';
             document.getElementById('handoverPerson').value = '';
-            document.getElementById('notes').value = '';
             
+            // 清空動態新增的項目
             document.getElementById('workItemsContainer').innerHTML = '';
             document.getElementById('fileItemsContainer').innerHTML = '';
+            document.getElementById('notesContainer').innerHTML = '';
             
+            // 新增預設項目
             addWorkItem();
             addFileItem();
+            addNoteItem();
         }
     </script>
 </body>
 </html>
+
